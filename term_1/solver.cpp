@@ -8,7 +8,7 @@
 #pragma region Vectors
 
 template <typename type>
-using NaiveVector = std::valarray<type>; // Вектор обычной арифметики
+using NaiveVector = std::valarray<type>; // Vector for naive ariphmetics
 template <typename type>
 type norm2(const NaiveVector<type> &v)
 {
@@ -16,9 +16,9 @@ type norm2(const NaiveVector<type> &v)
 }
 
 template <typename type>
-struct KahanVector // Вектор переопределяющий сумму по алгоритму Кэхэна
+struct KahanVector // Vector with Kahan summation algorithm
 {
-    // Хранит данные в виде ряда, который численно суммируется только при +=, -= и индексном обращении []
+    // Store data in serias, which is summed only on +=, -=, [] operators being invoked
 
     KahanVector(std::initializer_list<type> ls) // ls.size() > 0
         : value({std::valarray<type>(ls)}), error(std::valarray<type>(ls.size()))
@@ -133,8 +133,7 @@ struct KahanVector // Вектор переопределяющий сумму �
 private:
     void collapse()
     {
-        // segmentation fault if value.size() == 0
-        for (auto v = value.begin() + 1; v != value.end(); v++)
+        for (auto v = value.begin() + 1; v != value.end(); v++) // v.size() != 0
         {
             auto y = *v - error;
             auto t = value.front() + y;
@@ -176,7 +175,7 @@ type norm2(const KahanVector<type> &v)
 #pragma region Problems
 
 template <template <typename type> class vector, typename type>
-struct Problem // Обощенная задача Коши в виде системы разрешенных относительно производной ОДУ первого порядка y' = f(x, y)
+struct Problem // Generelized Cauchy problem as system of first-order ODE y' = f(x, y)
 {
     Problem(const vector<type> &y0) : y0(y0) {}
     virtual vector<type> operator()(const type &x, const vector<type> &y) const & = 0;
@@ -184,12 +183,12 @@ struct Problem // Обощенная задача Коши в виде сист�
     const vector<type> y0;
 };
 template <template <typename type> class vector, typename type>
-struct IAnalyticalProblem // Задача с известным аналитическим решением
+struct IAnalyticalProblem // Problem with khown analytical solution
 {
     virtual vector<type> AnalyticalValue(type x) const & = 0;
 };
 template <template <typename type> class vector, typename type>
-struct IHaveInvariantProblem // Задача с инвариантном по x (интегралом движения)
+struct IHaveInvariantProblem // Problem with an invariant with respect to x (integral of motion)
 {
     virtual type Invariant(const vector<type> &y) const & = 0;
 };
@@ -226,13 +225,13 @@ struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, ty
 #pragma region Constraints
 
 template <template <typename type> class vector, typename type>
-struct IConstraint // ограничение итераций солвера
+struct IConstraint // solver's interations constraint
 {
     virtual bool operator()(const type &x, const vector<type> &y, unsigned long long i) const = 0;
 };
 
 template <template <typename type> class vector, typename type>
-struct СounterConstraint : public IConstraint<vector, type> // ограничение по количеству итераций
+struct СounterConstraint : public IConstraint<vector, type> // constraint on the amount of iterations
 {
     СounterConstraint(unsigned long long N) : N(N) {}
     bool operator()(const type &x, const vector<type> &y, unsigned long long i) const override
@@ -245,7 +244,7 @@ private:
 };
 
 template <template <typename type> class vector, typename type>
-struct AnalyticalDeviationConstraint : public IConstraint<vector, type> // ограничение относительного отклонения по выбранным координатам
+struct AnalyticalDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of chosen coordinates
 {
     AnalyticalDeviationConstraint(
         const IAnalyticalProblem<vector, type> &problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type &reletive_deviation_limit)
@@ -269,7 +268,7 @@ private:
 };
 
 template <template <typename type> class vector, typename type>
-struct InvariantDeviationConstraint : public IConstraint<vector, type> // ограничение относительного отклонения интеграла движения
+struct InvariantDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of the integral of motion
 {
     InvariantDeviationConstraint(
         const IHaveInvariantProblem<vector, type> &problem, const vector<type> &y0, const type &reletive_deviation_limit)
@@ -290,19 +289,19 @@ protected:
 
 #pragma region Printer
 
-// общие параметры вывода
+// general printer params
 static std::ostream *stream = nullptr;
 static std::string el_sep, zone_sep, row_sep, run_sep;
 static bool do_log;
 
-// Класс для вывода данных о решении в поток
+// Class for print uotput data into a stream
 template <template <typename type> class vector, typename type>
 struct Printer
 {
     Printer(const Problem<vector, type> &problem) : A(dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem))),
                                                     I(dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem))) {}
 
-    // печать текующего состояния
+    // printing current
     void print(const type &x, const vector<type> &y) const
     {
         if (!do_log)
@@ -322,7 +321,7 @@ struct Printer
         *stream << row_sep;
     }
 
-    // печать завершения забега и вывод времени
+    // print run's ending and results
     void stop(clock_t time, unsigned long long int n, const type &x, const vector<type> &y, const vector<type> &y0) const
     {
         *stream << run_sep << " time: " << time << ", iteraitions: " << n;
@@ -340,17 +339,17 @@ struct Printer
     }
 
 private:
-    // печать зонного разделителя
+    // printing zone-separator
     void print() const
     {
         *stream << zone_sep << el_sep;
     }
-    // печать значения
+    // printing a value
     void print(const type &x) const
     {
         *stream << x << el_sep;
     }
-    // печать вектора
+    // printing a vector
     void print(const vector<type> &y) const
     {
         for (int i = 0; i < y.size(); i++)
@@ -366,16 +365,16 @@ private:
 #pragma region Solver
 
 template <template <typename type> class vector, typename type>
-struct Solver // Итерационный решатель задачи Коши
+struct Solver // Iterative solver of Cauchy problem
 {
-    // problem - решаемая задача Коши
-    // delta - шаг по x одной итерации
-    // method - функция, расчитывающая следующий вектор y
+    // problem - Cauchy problem to solve
+    // delta - x stride of one iteration
+    // method - function returned y_{n+1} vector
     Solver(const Problem<vector, type> &problem, type delta,
            void (*method)(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &problem))
         : problem(problem), delta(delta), y(problem.y0), x(0), method(method), printer(Printer<vector, type>(problem)) {}
 
-    // обнуляет состояние
+    // restart the solver with new delta
     void restart(type delta)
     {
         this->delta = delta;
@@ -383,14 +382,14 @@ struct Solver // Итерационный решатель задачи Коши
         x = 0;
     }
 
-    // делает итерацию
+    // do iterate
     void next()
     {
         method(y, x, delta, problem);
         x += delta;
     }
 
-    // запускает решение до достижения ограничения cons
+    // iterates until cons is false, prints logs of each iteration and results including elapsed time
     void run(const IConstraint<vector, type> &cons)
     {
         clock_t start_time = clock();
@@ -412,6 +411,8 @@ protected:
     const type delta;
     const Printer<vector, type> printer;
 };
+
+//methods:
 
 template <template <typename type> class vector, typename type>
 void euler(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &f)
@@ -438,7 +439,7 @@ void runge_kutta(vector<type> &y, const type &x, const type &delta, const Proble
 
 #pragma endregion
 
-#pragma region Parse &run
+#pragma region Parse and run
 
 template <template <typename type> class vector, typename type>
 const Problem<vector, type> *parse_problem(const nlohmann::json &run)
