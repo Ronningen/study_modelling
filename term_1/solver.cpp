@@ -133,7 +133,7 @@ struct KahanVector // Vector with Kahan summation algorithm
 private:
     void collapse()
     {
-        for (auto v = value.begin() + 1; v != value.end(); v++) // v.size() != 0
+        for (auto v = value.begin() + 1; v != value.end(); v++) // v.size() != 0 - otherwise logical error
         {
             auto y = *v - error;
             auto t = value.front() + y;
@@ -214,34 +214,101 @@ struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, ty
 
     type Invariant(const vector<type> &y) const & override
     {
-        return (pow(y[1], 2) + w2 * pow(y[0], 2)) / 2;
+        type x_ = y[0], v_ = y[1];
+        return (v_ * v_ + w2 * x_ * x_) / 2;
     }
 
     const type w, w2, A, initial_phase;
 };
 
 template <template <typename type> class vector, typename type>
-struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth problem x = y[0], v = y[1]
+struct PhysicalPendulum : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
-    HollowEarth(vector<type> y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R) {}
+    PhysicalPendulum(vector<type> y0, type w) : Problem<vector, type>(y0),
+                                                  w(w), w2(w * w),
+                                                  A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
+                                                  initial_phase(atan(y0[1] / y0[0] / w)) {}
 
     vector<type> operator()(const type &x, const vector<type> &y) const & override
     {
-        if (y[0] < R)
-            return {{y[1], 0}};
+        return {{y[1], -w2 * sin(y[0])}};
+    }
+
+    type Invariant(const vector<type> &y) const & override 
+    {
+        type x_ = y[0], v_ = y[1];
+        return (v_ * v_ + w2 * sin(x_) * sin(x_)) / 2; // do not know how to calculate correctly
+    }
+
+    const type w, w2, A, initial_phase;
+};
+
+template <template <typename type> class vector, typename type>
+struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
+{
+    LimitHollowEarth(vector<type> y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM/R) {}
+
+    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    {
+        type x_ = y[0], v_ = y[1];
+
+        if (x_ > R)
+            return {{v_, - GM / x_ / x_ }};
+        else if (x_ < -R)
+            return {{v_, GM / x_ / x_}};
         else
-            return {{y[1], - GM / pow(y[0], 2) }};
+            return {{v_, 0}};
     }
 
     type Invariant(const vector<type> &y) const & override
     {
-        if (y[0] < R)
-            return pow(y[1], 2) / 2;
+        type x_ = y[0], v_ = y[1];
+
+        if (abs(x_) < R)
+            return v_ * v_ / 2 + U0;
         else
-            return pow(y[1], 2) - GM / y[0];
+            return v_ * v_ / 2 - GM / abs(x_);
     }
 
-    const type GM, R;
+    const type GM, R, U0;
+};
+
+template <template <typename type> class vector, typename type>
+struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with bold surface problem x = y[0], v = y[1]
+{
+    HollowEarth(vector<type> y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R*R*R - r*r*r), r3(r*r*r) {}
+
+    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    {
+        type x_ = y[0], v_ = y[1];
+
+        if (x_ > R)
+            return {{v_, - GM / x_ / x_}};
+        else if (x_ > r)
+            return {{v_, - GM * (x_*x_*x_ - r3) / x_ / x_ / dR3}};
+
+        else if (x_ < -R)
+            return {{v_, GM / x_ / x_}};
+        else if (x_ < -r)
+            return {{v_, GM * (-x_*x_*x_ - r3) / x_ / x_ / dR3}};
+
+        else
+            return {{y[1], 0}};
+    }
+
+    type Invariant(const vector<type> &y) const & override
+    {
+        type x_ = y[0], v_ = y[1];
+
+        if (abs(x_) > R)
+            return v_ * v_ / 2 - GM / abs(x_);
+        else if (abs(x_) > r)
+            return v_ * v_ / 2 - GM * (abs(x_*x_*x_) - r3) / abs(x_) / dR3; // do not know how to calculate correctly
+        else
+            return 0;
+    }
+
+    const type GM, R, r, dR3, r3;
 };
 
 #pragma endregion
@@ -472,6 +539,12 @@ const Problem<vector, type> *parse_problem(const nlohmann::json &run)
     std::string problem_s = problem_j["type"];
     if (problem_s == "simplest_oscillator")
         return new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+    else if (problem_s == "physical_pendulum")
+        return new PhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+    else if (problem_s == "hollow_earth")
+        return new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
+    else if (problem_s == "limit_hollow_earth")
+        return new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
 
     throw std::runtime_error("invalid configuration json");
 }
