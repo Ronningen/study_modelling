@@ -108,14 +108,14 @@ struct KahanVector // Vector with Kahan summation algorithm
         return *this * -1;
     }
 
-    template<typename index>
+    template <typename index>
     auto operator[](const index &i)
     {
         collapse();
         return value.front()[i];
     }
 
-    template<typename index>
+    template <typename index>
     const auto operator[](const index &i) const
     {
         collapse();
@@ -127,7 +127,7 @@ struct KahanVector // Vector with Kahan summation algorithm
         return error.size();
     }
 
-    template<typename type_>
+    template <typename type_>
     friend type_ norm2(const KahanVector<type_> &v);
 
 private:
@@ -144,7 +144,7 @@ private:
     }
     void collapse() const
     {
-        const_cast<KahanVector<type>*>(this)->collapse();
+        const_cast<KahanVector<type> *>(this)->collapse();
     }
 
     std::vector<std::valarray<type>> value;
@@ -194,7 +194,7 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
 };
 
 template <template <typename type> class vector, typename type>
-struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type>
+struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
     SimplestOscillator(vector<type> y0, type w) : Problem<vector, type>(y0),
                                                   w(w), w2(w * w),
@@ -214,10 +214,34 @@ struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, ty
 
     type Invariant(const vector<type> &y) const & override
     {
-        return norm2<type>(this->operator()(0, y));
+        return (pow(y[1], 2) + w2 * pow(y[0], 2)) / 2;
     }
 
     const type w, w2, A, initial_phase;
+};
+
+template <template <typename type> class vector, typename type>
+struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth problem x = y[0], v = y[1]
+{
+    HollowEarth(vector<type> y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R) {}
+
+    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    {
+        if (y[0] < R)
+            return {{y[1], 0}};
+        else
+            return {{y[1], - GM / pow(y[0], 2) }};
+    }
+
+    type Invariant(const vector<type> &y) const & override
+    {
+        if (y[0] < R)
+            return pow(y[1], 2) / 2;
+        else
+            return pow(y[1], 2) - GM / y[0];
+    }
+
+    const type GM, R;
 };
 
 #pragma endregion
@@ -412,7 +436,7 @@ protected:
     const Printer<vector, type> printer;
 };
 
-//methods:
+// methods:
 
 template <template <typename type> class vector, typename type>
 void euler(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &f)
