@@ -65,27 +65,27 @@ struct KahanVector // Vector with Kahan summation algorithm
         return *this += -r;
     }
 
-    KahanVector<type> operator*(const type &r) const &
+    KahanVector<type> operator*(type r) const &
     {
         return KahanVector<type>(*this) *= r;
     }
 
-    KahanVector<type> &operator*(const type &r) &&
+    KahanVector<type> &operator*(type r) &&
     {
         return *this *= r;
     }
 
-    KahanVector<type> operator/(const type &r) const &
+    KahanVector<type> operator/(type r) const &
     {
         return KahanVector<type>(*this) /= r;
     }
 
-    KahanVector<type> &operator/(const type &r) &&
+    KahanVector<type> &operator/(type r) &&
     {
         return *this /= r;
     }
 
-    KahanVector<type> &operator*=(const type &r)
+    KahanVector<type> &operator*=(type r)
     {
         for (auto v = value.begin(); v != value.end(); v++)
             *v *= r;
@@ -93,7 +93,7 @@ struct KahanVector // Vector with Kahan summation algorithm
         return *this;
     }
 
-    KahanVector<type> &operator/=(const type &r)
+    KahanVector<type> &operator/=(type r)
     {
         return *this *= (1 / r);
     }
@@ -109,14 +109,14 @@ struct KahanVector // Vector with Kahan summation algorithm
     }
 
     template <typename index>
-    auto operator[](const index &i)
+    auto operator[](index i)
     {
         collapse();
         return value.front()[i];
     }
 
     template <typename index>
-    const auto operator[](const index &i) const
+    const auto operator[](index i) const
     {
         collapse();
         return value.front()[i];
@@ -152,13 +152,13 @@ private:
 };
 
 template <typename type_, typename type>
-KahanVector<type> operator*(const type_ &r, const KahanVector<type> &v)
+KahanVector<type> operator*(type_ r, const KahanVector<type> &v)
 {
     return v * r;
 }
 
 template <typename type_, typename type>
-KahanVector<type> &operator*(const type_ &r, KahanVector<type> &&v)
+KahanVector<type> &operator*(type_ r, KahanVector<type> &&v)
 {
     return std::move(v) * r;
 }
@@ -178,14 +178,14 @@ template <template <typename type> class vector, typename type>
 struct Problem // Generelized Cauchy problem as system of first-order ODE y' = f(x, y)
 {
     Problem(const vector<type> &y0) : y0(y0) {}
-    virtual vector<type> operator()(const type &x, const vector<type> &y) const & = 0;
+    virtual vector<type> operator()(const type x, const vector<type> &y) const & = 0;
 
     const vector<type> y0;
 };
 template <template <typename type> class vector, typename type>
 struct IAnalyticalProblem // Problem with khown analytical solution
 {
-    virtual vector<type> AnalyticalValue(type x) const & = 0;
+    virtual vector<type> AnalyticalValue(const type x) const & = 0;
 };
 template <template <typename type> class vector, typename type>
 struct IHaveInvariantProblem // Problem with an invariant with respect to x (integral of motion)
@@ -196,17 +196,17 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
 template <template <typename type> class vector, typename type>
 struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
-    SimplestOscillator(vector<type> y0, type w) : Problem<vector, type>(y0),
+    SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
                                                   w(w), w2(w * w),
                                                   A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
                                                   initial_phase(atan(y0[1] / y0[0] / w)) {}
 
-    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         return {{y[1], -w2 * y[0]}};
     }
 
-    vector<type> AnalyticalValue(type x) const & override
+    vector<type> AnalyticalValue(const type x) const & override
     {
         return {{A * cos(w * x + initial_phase),
                  -A * w * sin(w * x + initial_phase)}};
@@ -224,12 +224,12 @@ struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, ty
 template <template <typename type> class vector, typename type>
 struct PhysicalPendulum : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
-    PhysicalPendulum(vector<type> y0, type w) : Problem<vector, type>(y0),
+    PhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0),
                                                   w(w), w2(w * w),
                                                   A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
                                                   initial_phase(atan(y0[1] / y0[0] / w)) {}
 
-    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         return {{y[1], -w2 * sin(y[0])}};
     }
@@ -246,9 +246,9 @@ struct PhysicalPendulum : Problem<vector, type>, IHaveInvariantProblem<vector, t
 template <template <typename type> class vector, typename type>
 struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
 {
-    LimitHollowEarth(vector<type> y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM/R) {}
+    LimitHollowEarth(const vector<type> &y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM/R) {}
 
-    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         type x_ = y[0], v_ = y[1];
 
@@ -276,9 +276,9 @@ struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, t
 template <template <typename type> class vector, typename type>
 struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with bold surface problem x = y[0], v = y[1]
 {
-    HollowEarth(vector<type> y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R*R*R - r*r*r), r3(r*r*r) {}
+    HollowEarth(const vector<type> &y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R*R*R - r*r*r), r3(r*r*r) {}
 
-    vector<type> operator()(const type &x, const vector<type> &y) const & override
+    vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         type x_ = y[0], v_ = y[1];
 
@@ -318,14 +318,14 @@ struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> 
 template <template <typename type> class vector, typename type>
 struct IConstraint // solver's interations constraint
 {
-    virtual bool operator()(const type &x, const vector<type> &y, unsigned long long i) const = 0;
+    virtual bool operator()(const type x, const vector<type> &y, unsigned long long i) const = 0;
 };
 
 template <template <typename type> class vector, typename type>
 struct СounterConstraint : public IConstraint<vector, type> // constraint on the amount of iterations
 {
     СounterConstraint(unsigned long long N) : N(N) {}
-    bool operator()(const type &x, const vector<type> &y, unsigned long long i) const override
+    bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
     {
         return (i < N);
     }
@@ -338,16 +338,16 @@ template <template <typename type> class vector, typename type>
 struct AnalyticalDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of chosen coordinates
 {
     AnalyticalDeviationConstraint(
-        const IAnalyticalProblem<vector, type> &problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type &reletive_deviation_limit)
+        const IAnalyticalProblem<vector, type> &problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type reletive_deviation_limit)
         : problem(problem), comparison_mask(comparison_mask),
           deviation_limit2(norm2<type>(y0[comparison_mask]) * reletive_deviation_limit * reletive_deviation_limit) {}
 
-    type current_deviation2(const type &x, const vector<type> &y) const
+    type current_deviation2(const type x, const vector<type> &y) const
     {
         return norm2<type>((problem.AnalyticalValue(x) - y)[comparison_mask]);
     }
 
-    bool operator()(const type &x, const vector<type> &y, unsigned long long i) const override
+    bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
     {
         return current_deviation2(x, y) < deviation_limit2;
     }
@@ -362,10 +362,10 @@ template <template <typename type> class vector, typename type>
 struct InvariantDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of the integral of motion
 {
     InvariantDeviationConstraint(
-        const IHaveInvariantProblem<vector, type> &problem, const vector<type> &y0, const type &reletive_deviation_limit)
+        const IHaveInvariantProblem<vector, type> &problem, const vector<type> &y0, const type reletive_deviation_limit)
         : problem(problem), invariant(problem.Invariant(y0)), deviation_limit(invariant * reletive_deviation_limit) {}
 
-    bool operator()(const type &x, const vector<type> &y, unsigned long long i) const override
+    bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
     {
         return abs(problem.Invariant(y) - invariant) < deviation_limit;
     }
@@ -393,7 +393,7 @@ struct Printer
                                                     I(dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem))) {}
 
     // printing current
-    void print(const type &x, const vector<type> &y) const
+    void print(const type x, const vector<type> &y) const
     {
         if (!do_log)
             return;
@@ -413,7 +413,7 @@ struct Printer
     }
 
     // print run's ending and results
-    void stop(clock_t time, unsigned long long int n, const type &x, const vector<type> &y, const vector<type> &y0) const
+    void stop(const clock_t time, const unsigned long long int n, const type x, const vector<type> &y, const vector<type> &y0) const
     {
         *stream << run_sep << " time: " << time << ", iteraitions: " << n;
         if (I != nullptr)
@@ -436,7 +436,7 @@ private:
         *stream << zone_sep << el_sep;
     }
     // printing a value
-    void print(const type &x) const
+    void print(const type x) const
     {
         *stream << x << el_sep;
     }
@@ -462,7 +462,7 @@ struct Solver // Iterative solver of Cauchy problem
     // delta - x stride of one iteration
     // method - function returned y_{n+1} vector
     Solver(const Problem<vector, type> &problem, type delta,
-           void (*method)(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &problem))
+           void (*method)(vector<type> &y, const type x, const type delta, const Problem<vector, type> &problem))
         : problem(problem), delta(delta), y(problem.y0), x(0), method(method), printer(Printer<vector, type>(problem)) {}
 
     // restart the solver with new delta
@@ -498,7 +498,7 @@ protected:
     vector<type> y;
 
     const Problem<vector, type> &problem;
-    void (*method)(vector<type> &, const type &, const type &, const Problem<vector, type> &);
+    void (*method)(vector<type> &y, const type x, const type delta, const Problem<vector, type> &problem);
     const type delta;
     const Printer<vector, type> printer;
 };
@@ -506,20 +506,20 @@ protected:
 // methods:
 
 template <template <typename type> class vector, typename type>
-void euler(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &f)
+void euler(vector<type> &y, const type x, const type delta, const Problem<vector, type> &f)
 {
     y += delta * f(x, y);
 }
 
 template <template <typename type> class vector, typename type>
-void heun(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &f)
+void heun(vector<type> &y, const type x, const type delta, const Problem<vector, type> &f)
 {
     vector<type> k = y + delta * f(x, y);
     y += delta * (f(x, y) + f(x + delta, k)) / 2;
 }
 
 template <template <typename type> class vector, typename type>
-void runge_kutta(vector<type> &y, const type &x, const type &delta, const Problem<vector, type> &f)
+void runge_kutta(vector<type> &y, const type x, const type  delta, const Problem<vector, type> &f)
 {
     vector<type> k1 = f(x, y);
     vector<type> k2 = f(x + delta / 2, y + delta / 2 * k1);
@@ -635,7 +635,7 @@ void parse_and_run(const nlohmann::json &config)
 
 #pragma endregion
 
-int main(int argc, char **argv)
+int main()
 {
     std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/config.json");
     parse_and_run(nlohmann::json::parse(f));
