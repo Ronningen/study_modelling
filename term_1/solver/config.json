@@ -1,0 +1,47 @@
+{
+    "head": {
+        "stream": "std",
+        "el_sep": " ",
+        "zone_sep": " | ",
+        "row_sep": "\n",
+        "run_sep": "finish",
+        "do_log": true
+    },
+    "runs": [
+        {
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 10,
+                "v0": 0,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        }
+    ],
+    "examples": {
+        "constraint_1": {
+            "type": "counter",
+            "N": 100
+        },
+        "constraint_2": {
+            "type": "analytical",
+            "comparison_mask": {
+                "start": 0,
+                "size": 1,
+                "stride": 1
+            },
+            "reletive_deviation_limit": 0.01
+        },
+        "constraint_3": {
+            "type": "invariant",
+            "reletive_deviation_limit": 0.01
+        }
+    }
+}

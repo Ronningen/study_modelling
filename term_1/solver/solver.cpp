@@ -197,9 +197,9 @@ template <template <typename type> class vector, typename type>
 struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
     SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
-                                                  w(w), w2(w * w),
-                                                  A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
-                                                  initial_phase(atan(y0[1] / y0[0] / w)) {}
+                                                         w(w), w2(w * w),
+                                                         A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
+                                                         initial_phase(atan(y0[1] / y0[0] / w)) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
@@ -225,35 +225,40 @@ template <template <typename type> class vector, typename type>
 struct PhysicalPendulum : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
     PhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0),
-                                                  w(w), w2(w * w),
-                                                  A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
-                                                  initial_phase(atan(y0[1] / y0[0] / w)) {}
+                                                       w(w),
+                                                       A(sqrt(y0[1] * y0[1] / w / w + y0[0] * y0[0])),
+                                                       initial_phase(atan(y0[1] / y0[0] / w))
+    {
+        g = w * w * A;
+        gA = g * A;
+    }
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {{y[1], -w2 * sin(y[0])}};
+        return {{y[1], -g * sin(y[0] / A)}};
     }
 
-    type Invariant(const vector<type> &y) const & override 
+    type Invariant(const vector<type> &y) const & override
     {
         type x_ = y[0], v_ = y[1];
-        return (v_ * v_ + w2 * sin(x_) * sin(x_)) / 2; // do not know how to calculate correctly
+        return (v_ * v_ / 2 + gA * (1 - cos(x_ / A))); // do not know how to calculate correctly
     }
 
-    const type w, w2, A, initial_phase;
+    const type w, A, initial_phase;
+    type g, gA;
 };
 
 template <template <typename type> class vector, typename type>
 struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
 {
-    LimitHollowEarth(const vector<type> &y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM/R) {}
+    LimitHollowEarth(const vector<type> &y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM / R) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         type x_ = y[0], v_ = y[1];
 
         if (x_ > R)
-            return {{v_, - GM / x_ / x_ }};
+            return {{v_, -GM / x_ / x_}};
         else if (x_ < -R)
             return {{v_, GM / x_ / x_}};
         else
@@ -276,21 +281,21 @@ struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, t
 template <template <typename type> class vector, typename type>
 struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with bold surface problem x = y[0], v = y[1]
 {
-    HollowEarth(const vector<type> &y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R*R*R - r*r*r), r3(r*r*r) {}
+    HollowEarth(const vector<type> &y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R * R * R - r * r * r), r3(r * r * r) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         type x_ = y[0], v_ = y[1];
 
         if (x_ > R)
-            return {{v_, - GM / x_ / x_}};
+            return {{v_, -GM / x_ / x_}};
         else if (x_ > r)
-            return {{v_, - GM * (x_*x_*x_ - r3) / x_ / x_ / dR3}};
+            return {{v_, -GM * (x_ * x_ * x_ - r3) / x_ / x_ / dR3}};
 
         else if (x_ < -R)
             return {{v_, GM / x_ / x_}};
         else if (x_ < -r)
-            return {{v_, GM * (-x_*x_*x_ - r3) / x_ / x_ / dR3}};
+            return {{v_, GM * (-x_ * x_ * x_ - r3) / x_ / x_ / dR3}};
 
         else
             return {{y[1], 0}};
@@ -303,7 +308,7 @@ struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> 
         if (abs(x_) > R)
             return v_ * v_ / 2 - GM / abs(x_);
         else if (abs(x_) > r)
-            return v_ * v_ / 2 - GM * (abs(x_*x_*x_) - r3) / abs(x_) / dR3; // do not know how to calculate correctly
+            return v_ * v_ / 2 - GM * (abs(x_ * x_ * x_) - r3) / abs(x_) / dR3; // do not know how to calculate correctly
         else
             return 0;
     }
@@ -519,7 +524,7 @@ void heun(vector<type> &y, const type x, const type delta, const Problem<vector,
 }
 
 template <template <typename type> class vector, typename type>
-void runge_kutta(vector<type> &y, const type x, const type  delta, const Problem<vector, type> &f)
+void runge_kutta(vector<type> &y, const type x, const type delta, const Problem<vector, type> &f)
 {
     vector<type> k1 = f(x, y);
     vector<type> k2 = f(x + delta / 2, y + delta / 2 * k1);
@@ -637,6 +642,6 @@ void parse_and_run(const nlohmann::json &config)
 
 int main()
 {
-    std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/config.json");
+    std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
     parse_and_run(nlohmann::json::parse(f));
 }

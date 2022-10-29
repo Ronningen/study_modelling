@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import json
 
 data = str(subprocess.check_output(f"./bins/solver"))[2:-1]
-conf = json.load(open("term_1/config.json"))
+conf = json.load(open("term_1/solver/config.json"))
 head = conf["head"]
 if head["do_log"]:
     el_sep = head["el_sep"]
