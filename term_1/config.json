@@ -5,7 +5,7 @@
         "zone_sep": " | ",
         "row_sep": "\n",
         "run_sep": "finish",
-        "do_log": false
+        "do_log": true
     },
     "runs": [
         {
@@ -13,44 +13,62 @@
             "vector": "naive",
             "problem": 
             {
-                "type": "simplest_oscillator",
-                "x0": 1,
+                "type": "physical_pendulum",
+                "x0": 2,
                 "v0": 0,
                 "w": 1
             },
-            "method": "euler",
+            "method": "runge_kutta",
             "constraint": 
             {
                 "type": "counter",
-                "N": 100
+                "N": 2000
             },
-            "delta": 0.0000000010
+            "delta": 0.01
         },
         {
             "type": "double", 
             "vector": "naive",
             "problem": 
             {
-                "type": "simplest_oscillator",
-                "x0": 1,
+                "type": "physical_pendulum",
+                "x0": 2,
                 "v0": 0,
                 "w": 1
             },
-            "method": "euler",
+            "method": "runge_kutta",
             "constraint": 
             {
                 "type": "counter",
-                "N": 100
-            },       
-            "delta": 0.0000000009
+                "N": 1500000
+            },
+            "delta": 0.01
         },
         {
             "type": "double", 
             "vector": "naive",
             "problem": 
             {
-                "type": "simplest_oscillator",
-                "x0": 1,
+                "type": "physical_pendulum",
+                "x0": 2,
+                "v0": 0,
+                "w": 1
+            },
+            "method": "heun",
+            "constraint": 
+            {
+                "type": "counter",
+                "N": 1500000
+            },
+            "delta": 0.01
+        },
+        {
+            "type": "double", 
+            "vector": "naive",
+            "problem": 
+            {
+                "type": "physical_pendulum",
+                "x0": 2,
                 "v0": 0,
                 "w": 1
             },
@@ -58,9 +76,9 @@
             "constraint": 
             {
                 "type": "counter",
-                "N": 100
-            },       
-            "delta": 0.00000000011
+                "N": 1500000
+            },
+            "delta": 0.01
         }
     ],
     "examples":
