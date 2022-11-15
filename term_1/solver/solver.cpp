@@ -169,7 +169,7 @@ struct KahanVector final // Vector with Kahan summation algorithm
 private:
     void collapse()
     {
-        if (v.size() == 0)
+        if (value.size() == 0)
         {
             std::cerr << "emty vector";
             throw std::logic_error("emty vector");
@@ -585,15 +585,15 @@ const std::shared_ptr< Problem<vector, type> > parse_problem(const nlohmann::jso
         auto problem_j = run["problem"];
         std::string problem_s = problem_j["type"];
         if (problem_s == "simplest_oscillator")
-            return new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+            return std::shared_ptr< Problem<vector, type> >{new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"])};
         else if (problem_s == "ideal_physical_pendulum")
-            return new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+            return std::shared_ptr< Problem<vector, type> >{new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"])};
         else if (problem_s == "physical_pendulum")
-            return new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/);
+            return std::shared_ptr< Problem<vector, type> >{new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/)};
         else if (problem_s == "hollow_earth")
-            return new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
+            return std::shared_ptr< Problem<vector, type> >{new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"])};
         else if (problem_s == "limit_hollow_earth")
-            return new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
+            return std::shared_ptr< Problem<vector, type> >{new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"])};
 
         throw std::runtime_error("invalid configuration json");
     }
@@ -611,18 +611,18 @@ const std::shared_ptr< IConstraint<vector, type> >parse_constraint(const nlohman
         auto cons_j = run["constraint"];
         std::string cons_s = cons_j["type"];
         if (cons_s == "counter")
-            return new СounterConstraint<vector, type>((unsigned long long int)cons_j["N"]);
+            return std::shared_ptr< IConstraint<vector, type> >{new СounterConstraint<vector, type>((unsigned long long int)cons_j["N"])};
         else if (cons_s == "analytical")
         {
             auto mask = cons_j["comparison_mask"];
-            return new AnalyticalDeviationConstraint<vector, type>(
+            return std::shared_ptr< IConstraint<vector, type> >{new AnalyticalDeviationConstraint<vector, type>(
                 *dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-                problem.y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"]);
+                problem.y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"])};
         }
         else if (cons_s == "invariant")
-            return new InvariantDeviationConstraint<vector, type>(
+            return std::shared_ptr< IConstraint<vector, type> >{new InvariantDeviationConstraint<vector, type>(
                 *dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-                problem.y0, (type)cons_j["reletive_deviation_limit"]);
+                problem.y0, (type)cons_j["reletive_deviation_limit"])};
 
         throw std::runtime_error("invalid configuration json");
     }
