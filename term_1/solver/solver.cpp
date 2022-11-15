@@ -16,19 +16,15 @@ type norm2(const NaiveVector<type> &v)
 }
 
 template <typename type>
-struct KahanVector // Vector with Kahan summation algorithm
+struct KahanVector final // Vector with Kahan summation algorithm
 {
     // Store data in serias, which is summed only on +=, -=, [] operators being invoked
 
     KahanVector(std::initializer_list<type> ls) // ls.size() > 0
-        : value({std::valarray<type>(ls)}), error(std::valarray<type>(ls.size()))
-    {
-    }
+        : value({std::valarray<type>(ls)}), error(std::valarray<type>(ls.size())){}
 
     KahanVector(size_t n) // n > 0
-        : value({std::valarray<type>(n)}), error(std::valarray<type>(n))
-    {
-    }
+        : value({std::valarray<type>(n)}), error(std::valarray<type>(n)){}
 
     KahanVector<type> operator+(const KahanVector<type> &r) const &
     {
@@ -194,7 +190,7 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
 };
 
 template <template <typename type> class vector, typename type>
-struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
+struct SimplestOscillator final : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
 {
     SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
                                                          w(w), w2(w * w),
@@ -222,34 +218,33 @@ struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, ty
 };
 
 template <template <typename type> class vector, typename type>
-struct PhysicalPendulum : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
+struct IdialPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
 {
-    PhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0),
-                                                       w(w),
-                                                       A(sqrt(y0[1] * y0[1] / w / w + y0[0] * y0[0])),
-                                                       initial_phase(atan(y0[1] / y0[0] / w))
-    {
-        g = w * w * A;
-        gA = g * A;
-    }
+    IdialPhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0), w(w) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {{y[1], -g * sin(y[0] / A)}};
+        return {{y[1], -w * sin(y[0])}};
     }
 
-    type Invariant(const vector<type> &y) const & override
-    {
-        type x_ = y[0], v_ = y[1];
-        return (v_ * v_ / 2 + gA * (1 - cos(x_ / A))); // do not know how to calculate correctly
-    }
-
-    const type w, A, initial_phase;
-    type g, gA;
+    const type w;
 };
 
 template <template <typename type> class vector, typename type>
-struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
+struct RealPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
+{
+    RealPhysicalPendulum(const vector<type> &y0, type w=1, type gamma=0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -2*gamma*y[1] - w * sin(y[0])}};
+    }
+
+    const type w, gamma;
+};
+
+template <template <typename type> class vector, typename type>
+struct LimitHollowEarth final : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
 {
     LimitHollowEarth(const vector<type> &y0, type GM, type R) : Problem<vector, type>(y0), GM(GM), R(R), U0(-GM / R) {}
 
@@ -279,7 +274,7 @@ struct LimitHollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, t
 };
 
 template <template <typename type> class vector, typename type>
-struct HollowEarth : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with bold surface problem x = y[0], v = y[1]
+struct HollowEarth final : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with bold surface problem x = y[0], v = y[1]
 {
     HollowEarth(const vector<type> &y0, type GM, type R, type r) : Problem<vector, type>(y0), GM(GM), R(R), r(r), dR3(R * R * R - r * r * r), r3(r * r * r) {}
 
@@ -327,7 +322,7 @@ struct IConstraint // solver's interations constraint
 };
 
 template <template <typename type> class vector, typename type>
-struct СounterConstraint : public IConstraint<vector, type> // constraint on the amount of iterations
+struct СounterConstraint final : public IConstraint<vector, type> // constraint on the amount of iterations
 {
     СounterConstraint(unsigned long long N) : N(N) {}
     bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
@@ -340,7 +335,7 @@ private:
 };
 
 template <template <typename type> class vector, typename type>
-struct AnalyticalDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of chosen coordinates
+struct AnalyticalDeviationConstraint final : public IConstraint<vector, type> // constraint on reletive deviation of chosen coordinates
 {
     AnalyticalDeviationConstraint(
         const IAnalyticalProblem<vector, type> &problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type reletive_deviation_limit)
@@ -364,7 +359,7 @@ private:
 };
 
 template <template <typename type> class vector, typename type>
-struct InvariantDeviationConstraint : public IConstraint<vector, type> // constraint on reletive deviation of the integral of motion
+struct InvariantDeviationConstraint final : public IConstraint<vector, type> // constraint on reletive deviation of the integral of motion
 {
     InvariantDeviationConstraint(
         const IHaveInvariantProblem<vector, type> &problem, const vector<type> &y0, const type reletive_deviation_limit)
@@ -381,7 +376,7 @@ protected:
     const type deviation_limit;
 };
 
-#pragma endregion
+#pragma endregion // TODO: bound constraint, multiconstraint
 
 #pragma region Printer
 
@@ -392,7 +387,7 @@ static bool do_log;
 
 // Class for print uotput data into a stream
 template <template <typename type> class vector, typename type>
-struct Printer
+struct Printer final
 {
     Printer(const Problem<vector, type> &problem) : A(dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem))),
                                                     I(dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem))) {}
@@ -461,7 +456,7 @@ private:
 #pragma region Solver
 
 template <template <typename type> class vector, typename type>
-struct Solver // Iterative solver of Cauchy problem
+struct Solver final // Iterative solver of Cauchy problem
 {
     // problem - Cauchy problem to solve
     // delta - x stride of one iteration
@@ -544,8 +539,10 @@ const Problem<vector, type> *parse_problem(const nlohmann::json &run)
     std::string problem_s = problem_j["type"];
     if (problem_s == "simplest_oscillator")
         return new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+    else if (problem_s == "ideal_physical_pendulum")
+        return new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
     else if (problem_s == "physical_pendulum")
-        return new PhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+        return new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/);
     else if (problem_s == "hollow_earth")
         return new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
     else if (problem_s == "limit_hollow_earth")

@@ -5,7 +5,8 @@
         "zone_sep": " | ",
         "row_sep": "\n",
         "run_sep": "finish",
-        "do_log": true
+        "do_log": true,
+        "show_separate": false
     },
     "runs": [
         {
@@ -13,8 +14,428 @@
             "vector": "naive",
             "problem": {
                 "type": "physical_pendulum",
-                "x0": 10,
-                "v0": 0,
+                "x0": 0,
+                "v0": 0.1,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.2,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.3,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.4,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.5,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.6,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.7,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.8,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 0.9,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.0,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.1,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.2,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.3,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.4,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.5,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.6,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.7,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.8,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 1.9,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.1,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.2,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.3,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.4,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.5,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.6,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.7,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.8,
+                "w": 1
+            },
+            "method": "runge_kutta",
+            "constraint": {
+                "type": "counter",
+                "N": 2000
+            },
+            "delta": 0.01
+        },{
+            "type": "double",
+            "vector": "naive",
+            "problem": {
+                "type": "physical_pendulum",
+                "x0": 0,
+                "v0": 2.9,
                 "w": 1
             },
             "method": "runge_kutta",
