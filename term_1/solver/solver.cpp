@@ -4,6 +4,7 @@
 #include <valarray>
 #include <vector>
 #include <ctime>
+#include <memory>
 
 #pragma region Vectors
 
@@ -21,10 +22,14 @@ struct KahanVector final // Vector with Kahan summation algorithm
     // Store data in serias, which is summed only on +=, -=, [] operators being invoked
 
     KahanVector(std::initializer_list<type> ls) // ls.size() > 0
-        : value({std::valarray<type>(ls)}), error(std::valarray<type>(ls.size())){}
+        : value({std::valarray<type>(ls)}), error(std::valarray<type>(ls.size()))
+    {
+    }
 
     KahanVector(size_t n) // n > 0
-        : value({std::valarray<type>(n)}), error(std::valarray<type>(n)){}
+        : value({std::valarray<type>(n)}), error(std::valarray<type>(n))
+    {
+    }
 
     KahanVector<type> operator+(const KahanVector<type> &r) const &
     {
@@ -73,12 +78,26 @@ struct KahanVector final // Vector with Kahan summation algorithm
 
     KahanVector<type> operator/(type r) const &
     {
-        return KahanVector<type>(*this) /= r;
+        try
+        {
+            return KahanVector<type>(*this) /= r;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     KahanVector<type> &operator/(type r) &&
     {
-        return *this /= r;
+        try
+        {
+            return *this /= r;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     KahanVector<type> &operator*=(type r)
@@ -91,7 +110,14 @@ struct KahanVector final // Vector with Kahan summation algorithm
 
     KahanVector<type> &operator/=(type r)
     {
-        return *this *= (1 / r);
+        try
+        {
+            return *this *= (1 / r);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     KahanVector<type> operator-() const &
@@ -107,15 +133,29 @@ struct KahanVector final // Vector with Kahan summation algorithm
     template <typename index>
     auto operator[](index i)
     {
-        collapse();
-        return value.front()[i];
+        try
+        {
+            collapse();
+            return value.front()[i];
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     template <typename index>
     const auto operator[](index i) const
     {
-        collapse();
-        return value.front()[i];
+        try
+        {
+            collapse();
+            return value.front()[i];
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     size_t size() const
@@ -129,7 +169,12 @@ struct KahanVector final // Vector with Kahan summation algorithm
 private:
     void collapse()
     {
-        for (auto v = value.begin() + 1; v != value.end(); v++) // v.size() != 0 - otherwise logical error
+        if (v.size() == 0)
+        {
+            std::cerr << "emty vector";
+            throw std::logic_error("emty vector");
+        }
+        for (auto v = value.begin() + 1; v != value.end(); v++)
         {
             auto y = *v - error;
             auto t = value.front() + y;
@@ -233,11 +278,11 @@ struct IdialPhysicalPendulum final : Problem<vector, type> // 1-dimensional harm
 template <template <typename type> class vector, typename type>
 struct RealPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
 {
-    RealPhysicalPendulum(const vector<type> &y0, type w=1, type gamma=0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+    RealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {{y[1], -2*gamma*y[1] - w * sin(y[0])}};
+        return {{y[1], -2 * gamma * y[1] - w * sin(y[0])}};
     }
 
     const type w, gamma;
@@ -533,59 +578,80 @@ void runge_kutta(vector<type> &y, const type x, const type delta, const Problem<
 #pragma region Parse and run
 
 template <template <typename type> class vector, typename type>
-const Problem<vector, type> *parse_problem(const nlohmann::json &run)
+const std::shared_ptr< Problem<vector, type> > parse_problem(const nlohmann::json &run)
 {
-    auto problem_j = run["problem"];
-    std::string problem_s = problem_j["type"];
-    if (problem_s == "simplest_oscillator")
-        return new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
-    else if (problem_s == "ideal_physical_pendulum")
-        return new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
-    else if (problem_s == "physical_pendulum")
-        return new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/);
-    else if (problem_s == "hollow_earth")
-        return new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
-    else if (problem_s == "limit_hollow_earth")
-        return new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
+    try
+    {
+        auto problem_j = run["problem"];
+        std::string problem_s = problem_j["type"];
+        if (problem_s == "simplest_oscillator")
+            return new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+        else if (problem_s == "ideal_physical_pendulum")
+            return new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
+        else if (problem_s == "physical_pendulum")
+            return new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/);
+        else if (problem_s == "hollow_earth")
+            return new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
+        else if (problem_s == "limit_hollow_earth")
+            return new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
 
-    throw std::runtime_error("invalid configuration json");
+        throw std::runtime_error("invalid configuration json");
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 template <template <typename type> class vector, typename type>
-const IConstraint<vector, type> *parse_constraint(const nlohmann::json &run, const Problem<vector, type> &problem)
+const std::shared_ptr< IConstraint<vector, type> >parse_constraint(const nlohmann::json &run, const Problem<vector, type> &problem)
 {
-    auto cons_j = run["constraint"];
-    std::string cons_s = cons_j["type"];
-    if (cons_s == "counter")
-        return new СounterConstraint<vector, type>((unsigned long long int)cons_j["N"]);
-    else if (cons_s == "analytical")
+    try
     {
-        auto mask = cons_j["comparison_mask"];
-        return new AnalyticalDeviationConstraint<vector, type>(
-            *dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-            problem.y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"]);
-    }
-    else if (cons_s == "invariant")
-        return new InvariantDeviationConstraint<vector, type>(
-            *dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-            problem.y0, (type)cons_j["reletive_deviation_limit"]);
+        auto cons_j = run["constraint"];
+        std::string cons_s = cons_j["type"];
+        if (cons_s == "counter")
+            return new СounterConstraint<vector, type>((unsigned long long int)cons_j["N"]);
+        else if (cons_s == "analytical")
+        {
+            auto mask = cons_j["comparison_mask"];
+            return new AnalyticalDeviationConstraint<vector, type>(
+                *dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
+                problem.y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"]);
+        }
+        else if (cons_s == "invariant")
+            return new InvariantDeviationConstraint<vector, type>(
+                *dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
+                problem.y0, (type)cons_j["reletive_deviation_limit"]);
 
-    throw std::runtime_error("invalid configuration json");
+        throw std::runtime_error("invalid configuration json");
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 template <template <typename type> class vector, typename type>
 Solver<vector, type> parse_solver(const nlohmann::json &run, const Problem<vector, type> &problem)
 {
-    std::string method = run["method"];
-    type delta = run["delta"];
-    if (method == "euler")
-        return Solver<vector, type>(problem, delta, euler<vector, type>);
-    else if (method == "heun")
-        return Solver<vector, type>(problem, delta, heun<vector, type>);
-    else if (method == "runge_kutta")
-        return Solver<vector, type>(problem, delta, runge_kutta<vector, type>);
+    try
+    {
+        std::string method = run["method"];
+        type delta = run["delta"];
+        if (method == "euler")
+            return Solver<vector, type>(problem, delta, euler<vector, type>);
+        else if (method == "heun")
+            return Solver<vector, type>(problem, delta, heun<vector, type>);
+        else if (method == "runge_kutta")
+            return Solver<vector, type>(problem, delta, runge_kutta<vector, type>);
 
-    throw std::runtime_error("invalid configuration json");
+        throw std::runtime_error("invalid configuration json");
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 template <template <typename type> class vector, typename type>
@@ -599,46 +665,74 @@ void do_run(const nlohmann::json &run)
 template <typename type>
 void parse_vector(const nlohmann::json &run)
 {
-    std::string vector = run["vector"];
-    if (vector == "naive")
-        do_run<NaiveVector, type>(run);
-    else if (vector == "kahan")
-        do_run<KahanVector, type>(run);
+    try
+    {
+        std::string vector = run["vector"];
+        if (vector == "naive")
+            do_run<NaiveVector, type>(run);
+        else if (vector == "kahan")
+            do_run<KahanVector, type>(run);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 void parse_type(const nlohmann::json &run)
 {
-    std::string type = run["type"];
-    if (type == "float")
-        parse_vector<float>(run);
-    else if (type == "double")
-        parse_vector<double>(run);
-    else if (type == "long double")
-        parse_vector<long double>(run);
+    try
+    {
+        std::string type = run["type"];
+        if (type == "float")
+            parse_vector<float>(run);
+        else if (type == "double")
+            parse_vector<double>(run);
+        else if (type == "long double")
+            parse_vector<long double>(run);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 void parse_and_run(const nlohmann::json &config)
 {
-    auto head = config["head"];
+    try
+    {
+        auto head = config["head"];
 
-    el_sep = head["el_sep"],
-    zone_sep = head["zone_sep"],
-    row_sep = head["row_sep"],
-    run_sep = head["run_sep"];
-    do_log = head["do_log"];
+        el_sep = head["el_sep"],
+        zone_sep = head["zone_sep"],
+        row_sep = head["row_sep"],
+        run_sep = head["run_sep"];
+        do_log = head["do_log"];
 
-    std::string stream_ = head["stream"];
-    if (stream_ == "std")
-        stream = &std::cout;
+        std::string stream_ = head["stream"];
+        if (stream_ == "std")
+            stream = &std::cout;
 
-    for (auto run : config["runs"])
-        parse_type(run);
+        for (auto run : config["runs"])
+            parse_type(run);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 #pragma endregion
 
 int main()
 {
-    std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
-    parse_and_run(nlohmann::json::parse(f));
+    try
+    {
+        std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
+        parse_and_run(nlohmann::json::parse(f));
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
