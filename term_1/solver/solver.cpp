@@ -5,6 +5,40 @@
 #include <vector>
 #include <ctime>
 
+#pragma region literals and Parse
+
+template <size_t N> 
+struct literal_t
+{
+    char text[N]{};
+    constexpr literal_t(const char (&arg)[N])
+    {
+        for (int i = 0; i < N; i++)
+            text[i] = arg[i];
+    }
+};
+template <size_t N> 
+literal_t(const char (&)[N]) -> literal_t<N>;
+
+template <template <literal_t type> class generic, class base, literal_t... type>
+class Parser
+{
+    std::map<std::string, std::function<std::shared_ptr<base>()>> rules;
+
+public:
+    Parser() : rules{make_pair(type.text, []() { return make_shared<generic<type>>(); })...} {}
+    auto parse(const nlohmann::json &j)
+    {
+        std::string type_name = j["type"];
+        if (rules.contains(type_name)) 
+            return rules[type_name]();
+
+        throw std::runtime_error("type " + type_name + " has not been included into parser types.");
+    }
+};
+
+#pragma endregion
+
 #pragma region Vectors
 
 template <typename type>
@@ -175,14 +209,6 @@ type norm2(const KahanVector<type> &v)
 #pragma region Problems
 
 template <template <typename type> class vector, typename type>
-struct Problem // Generelized Cauchy problem as system of first-order ODE y' = f(x, y)
-{
-    Problem(const vector<type> &y0) : y0(y0) {}
-    virtual vector<type> operator()(const type x, const vector<type> &y) const & = 0;
-
-    const vector<type> y0;
-};
-template <template <typename type> class vector, typename type>
 struct IAnalyticalProblem // Problem with khown analytical solution
 {
     virtual vector<type> AnalyticalValue(const type x) const & = 0;
@@ -192,6 +218,21 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
 {
     virtual type Invariant(const vector<type> &y) const & = 0;
 };
+
+struct IProblem
+{
+    /* data */
+};
+
+template <template <typename type> class vector, typename type>
+struct Problem // Generelized Cauchy problem as system of first-order ODE y' = f(x, y)
+{
+    Problem(const vector<type> &y0) : y0(y0) {}
+    virtual vector<type> operator()(const type x, const vector<type> &y) const & = 0;
+
+    const vector<type> y0;
+};
+
 
 template <template <typename type> class vector, typename type>
 struct SimplestOscillator : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
