@@ -134,11 +134,6 @@ struct KahanVector final // Vector with Kahan summation algorithm
 private:
     void collapse()
     {
-        if (value.size() == 0)
-        {
-            std::cerr << "emty vector";
-            throw std::logic_error("emty vector");
-        }
         for (auto v = value.begin() + 1; v != value.end(); v++)
         {
             auto y = *v - error;
@@ -199,59 +194,6 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
     virtual type Invariant(const vector<type> &y) const & = 0;
 };
 
-template <template <typename type> class vector, typename type>
-struct SimplestOscillator final : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
-{
-    SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
-                                                         w(w), w2(w * w),
-                                                         A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
-                                                         initial_phase(atan(y0[1] / y0[0] / w)) {}
-
-    vector<type> operator()(const type x, const vector<type> &y) const & override
-    {
-        return {{y[1], -w2 * y[0]}};
-    }
-
-    vector<type> AnalyticalValue(const type x) const & override
-    {
-        return {{A * cos(w * x + initial_phase),
-                 -A * w * sin(w * x + initial_phase)}};
-    }
-
-    type Invariant(const vector<type> &y) const & override
-    {
-        type x_ = y[0], v_ = y[1];
-        return (v_ * v_ + w2 * x_ * x_) / 2;
-    }
-
-    const type w, w2, A, initial_phase;
-};
-
-template <template <typename type> class vector, typename type>
-struct IdialPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
-{
-    IdialPhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0), w(w) {}
-
-    vector<type> operator()(const type x, const vector<type> &y) const & override
-    {
-        return {{y[1], -w * sin(y[0])}};
-    }
-
-    const type w;
-};
-
-template <template <typename type> class vector, typename type>
-struct RealPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
-{
-    RealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
-
-    vector<type> operator()(const type x, const vector<type> &y) const & override
-    {
-        return {{y[1], -2 * gamma * y[1] - w * sin(y[0])}};
-    }
-
-    const type w, gamma;
-};
 
 template <template <typename type> class vector, typename type>
 struct LimitHollowEarth final : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
@@ -321,6 +263,78 @@ struct HollowEarth final : Problem<vector, type>, IHaveInvariantProblem<vector, 
     const type GM, R, r, dR3, r3;
 };
 
+template <template <typename type> class vector, typename type>
+struct SimplestOscillator final : Problem<vector, type>, IAnalyticalProblem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional harmonic oscillator x = y[0], v = y[1]
+{
+    SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
+                                                         w(w), w2(w * w),
+                                                         A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
+                                                         initial_phase(atan(y0[1] / y0[0] / w)) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -w2 * y[0]}};
+    }
+
+    vector<type> AnalyticalValue(const type x) const & override
+    {
+        return {{A * cos(w * x + initial_phase),
+                 -A * w * sin(w * x + initial_phase)}};
+    }
+
+    type Invariant(const vector<type> &y) const & override
+    {
+        type x_ = y[0], v_ = y[1];
+        return (v_ * v_ + w2 * x_ * x_) / 2;
+    }
+
+    const type w, w2, A, initial_phase;
+};
+
+template <template <typename type> class vector, typename type>
+struct IdialPhysicalPendulum final : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
+{
+    IdialPhysicalPendulum(const vector<type> &y0, type w) : Problem<vector, type>(y0), w(w) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -w * sin(y[0])}};
+    }
+
+    const type w;
+};
+
+template <template <typename type> class vector, typename type>
+struct RealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
+{
+    RealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -2 * gamma * y[1] - w * sin(y[0])}};
+    }
+
+    const type w, gamma;
+};
+
+template <template <typename type> class vector, typename type>
+struct BaseDrivedRealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
+{
+    RealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -2 * gamma * y[1] - w * sin(y[0]) - F}};
+    }
+
+    virtual type F(const type x, const vector<type> &y) const &
+    {
+        return 0;
+    }
+
+    const type w, gamma;
+};
+
 // parse:
 
 template <template <typename type> class vector, typename type>
@@ -329,15 +343,15 @@ const std::shared_ptr<Problem<vector, type>> parse_problem(const nlohmann::json 
     auto problem_j = run["problem"];
     std::string problem_s = problem_j["type"];
     if (problem_s == "simplest_oscillator")
-        return std::shared_ptr<Problem<vector, type>>{new SimplestOscillator<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"])};
+        return std::make_shared<SimplestOscillator<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
     else if (problem_s == "ideal_physical_pendulum")
-        return std::shared_ptr<Problem<vector, type>>{new IdialPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"])};
+        return std::make_shared<IdialPhysicalPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
     else if (problem_s == "physical_pendulum")
-        return std::shared_ptr<Problem<vector, type>>{new RealPhysicalPendulum<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["w"] /*, problem_j["gamma"]*/)};
+        return std::make_shared<RealPhysicalPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"] problem_j["gamma"]);
     else if (problem_s == "hollow_earth")
-        return std::shared_ptr<Problem<vector, type>>{new HollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"])};
+        return std::make_shared<HollowEarth<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
     else if (problem_s == "limit_hollow_earth")
-        return std::shared_ptr<Problem<vector, type>>{new LimitHollowEarth<vector, type>({problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"])};
+        return std::make_shared<LimitHollowEarth<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
 
     throw std::runtime_error("invalid configuration json");
 }
@@ -369,13 +383,13 @@ template <template <typename type> class vector, typename type>
 struct AnalyticalDeviationConstraint final : public IConstraint<vector, type> // constraint on reletive deviation of chosen coordinates
 {
     AnalyticalDeviationConstraint(
-        const IAnalyticalProblem<vector, type> &problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type reletive_deviation_limit)
+        std::shared_ptr<IAnalyticalProblem<vector, type>> problem, const vector<type> &y0, const std::__1::slice &comparison_mask, const type reletive_deviation_limit)
         : problem(problem), comparison_mask(comparison_mask),
           deviation_limit2(norm2<type>(y0[comparison_mask]) * reletive_deviation_limit * reletive_deviation_limit) {}
 
     type current_deviation2(const type x, const vector<type> &y) const
     {
-        return norm2<type>((problem.AnalyticalValue(x) - y)[comparison_mask]);
+        return norm2<type>((problem->AnalyticalValue(x) - y)[comparison_mask]);
     }
 
     bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
@@ -384,7 +398,7 @@ struct AnalyticalDeviationConstraint final : public IConstraint<vector, type> //
     }
 
 private:
-    const IAnalyticalProblem<vector, type> &problem;
+    const std::shared_ptr<IAnalyticalProblem<vector, type>> problem;
     const std::slice comparison_mask;
     const type deviation_limit2;
 };
@@ -393,16 +407,16 @@ template <template <typename type> class vector, typename type>
 struct InvariantDeviationConstraint final : public IConstraint<vector, type> // constraint on reletive deviation of the integral of motion
 {
     InvariantDeviationConstraint(
-        const IHaveInvariantProblem<vector, type> &problem, const vector<type> &y0, const type reletive_deviation_limit)
-        : problem(problem), invariant(problem.Invariant(y0)), deviation_limit(invariant * reletive_deviation_limit) {}
+        std::shared_ptr<IHaveInvariantProblem<vector, type>> problem, const vector<type> &y0, const type reletive_deviation_limit)
+        : problem(problem), invariant(problem->Invariant(y0)), deviation_limit(invariant * reletive_deviation_limit) {}
 
     bool operator()(const type x, const vector<type> &y, unsigned long long i) const override
     {
-        return abs(problem.Invariant(y) - invariant) < deviation_limit;
+        return abs(problem->Invariant(y) - invariant) < deviation_limit;
     }
 
 protected:
-    const IHaveInvariantProblem<vector, type> &problem;
+    std::shared_ptr<IHaveInvariantProblem<vector, type>> problem;
     const type invariant;
     const type deviation_limit;
 };
@@ -410,23 +424,23 @@ protected:
 // parse:
 
 template <template <typename type> class vector, typename type>
-const std::shared_ptr<IConstraint<vector, type>> parse_constraint(const nlohmann::json &run, const Problem<vector, type> &problem)
+const std::shared_ptr<IConstraint<vector, type>> parse_constraint(const nlohmann::json &run, std::shared_ptr<Problem<vector, type>> problem)
 {
     auto cons_j = run["constraint"];
     std::string cons_s = cons_j["type"];
     if (cons_s == "counter")
-        return std::shared_ptr<IConstraint<vector, type>>{new СounterConstraint<vector, type>((unsigned long long int)cons_j["N"])};
+        return std::make_shared<СounterConstraint<vector, type>>((unsigned long long int)cons_j["N"]);
     else if (cons_s == "analytical")
     {
         auto mask = cons_j["comparison_mask"];
-        return std::shared_ptr<IConstraint<vector, type>>{new AnalyticalDeviationConstraint<vector, type>(
-            *dynamic_cast<IAnalyticalProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-            problem.y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"])};
+        return std::make_shared<AnalyticalDeviationConstraint<vector, type>>(
+            std::dynamic_pointer_cast<IAnalyticalProblem<vector, type>>(problem),
+            problem->y0, std::slice(mask["start"], mask["size"], mask["stride"]), (type)cons_j["reletive_deviation_limit"]);
     }
     else if (cons_s == "invariant")
-        return std::shared_ptr<IConstraint<vector, type>>{new InvariantDeviationConstraint<vector, type>(
-            *dynamic_cast<IHaveInvariantProblem<vector, type> *>(const_cast<Problem<vector, type> *>(&problem)),
-            problem.y0, (type)cons_j["reletive_deviation_limit"])};
+        return std::make_shared<InvariantDeviationConstraint<vector, type>>(
+            std::dynamic_pointer_cast<IHaveInvariantProblem<vector, type>>(problem),
+            problem->y0, (type)cons_j["reletive_deviation_limit"]);
 
     throw std::runtime_error("invalid configuration json");
 }
@@ -443,16 +457,13 @@ struct PrinterConfig
     bool do_log;
 };
 
-
 // Class for print uotput data into a stream
 template <template <typename type> class vector, typename type>
 struct Printer final
 {
-    Printer(const PrinterConfig &conf, const Problem<vector, type> &problem) : conf(conf),
-        // A(dynamic_cast<const IAnalyticalProblem<vector, type>*>(&problem)),///////////////////
-        // I(dynamic_cast<const IHaveInvariantProblem<vector, type>*>(&problem)) {}
-        A(dynamic_cast<IAnalyticalProblem<vector, type>*>(const_cast<Problem<vector, type>*>(&problem))),
-        I(dynamic_cast<IHaveInvariantProblem<vector, type>*>(const_cast<Problem<vector, type>*>(&problem))){}
+    Printer(const PrinterConfig &conf, std::shared_ptr<Problem<vector, type>> problem) : conf(conf),
+            A(std::dynamic_pointer_cast<IAnalyticalProblem<vector, type>>(problem)),
+            I(std::dynamic_pointer_cast<IHaveInvariantProblem<vector, type>>(problem)) {}
 
     // printing current
     void print(const type x, const vector<type> &y) const
@@ -461,12 +472,12 @@ struct Printer final
             return;
         print(x);
         print(y);
-        if (I != nullptr)
+        if (I.use_count() > 0)
         {
             print();
             print(I->Invariant(y));
         }
-        if (A != nullptr)
+        if (A.use_count() > 0)
         {
             print();
             print(A->AnalyticalValue(x));
@@ -509,8 +520,8 @@ private:
             *conf.stream << y[i] << conf.el_sep;
     }
 
-    const IAnalyticalProblem<vector, type> *A;
-    const IHaveInvariantProblem<vector, type> *I;
+    const std::shared_ptr<IAnalyticalProblem<vector, type>> A;
+    const std::shared_ptr<IHaveInvariantProblem<vector, type>> I;
     const PrinterConfig &conf;
 };
 
@@ -528,16 +539,17 @@ struct DisposableSolver final : ISolver // Iterative solver of Cauchy problem
 {
     // problem - Cauchy problem to solve
     // delta - x stride of one iteration
-    // method - function returned y_{n+1} vector 
-    DisposableSolver(const Problem<vector, type> &problem, const IConstraint<vector, type> &cons, 
-                     const Printer<vector, type>& printer, type delta,
+    // method - function returned y_{n+1} vector
+    DisposableSolver(std::shared_ptr<Problem<vector, type>> problem,
+                     std::shared_ptr<IConstraint<vector, type>> cons,
+                     const Printer<vector, type> &printer, type delta,
                      void (*method)(vector<type> &y, const type x, const type delta, const Problem<vector, type> &problem))
-        : problem(problem), cons(cons), delta(delta), y(problem.y0), x(0), method(method), printer(printer) {}
+        : problem(problem), cons(cons), delta(delta), y(problem->y0), x(0), method(method), printer(printer) {}
 
     // do iterate
     void next()
     {
-        method(y, x, delta, problem);
+        method(y, x, delta, *problem);
         x += delta;
     }
 
@@ -546,20 +558,20 @@ struct DisposableSolver final : ISolver // Iterative solver of Cauchy problem
     {
         clock_t start_time = clock();
         unsigned long long i = 0;
-        for (; cons(x, y, i); i++)
+        for (; (*cons)(x, y, i); i++)
         {
             next();
             printer.print(x, y);
         }
-        printer.stop(clock() - start_time, i, x, y, problem.y0);
+        printer.stop(clock() - start_time, i, x, y, problem->y0);
     }
 
 protected:
     type x;
     vector<type> y;
 
-    const Problem<vector, type> &problem;
-    const IConstraint<vector, type> &cons;
+    const std::shared_ptr<IConstraint<vector, type>> cons;
+    const std::shared_ptr<Problem<vector, type>> problem;
     void (*method)(vector<type> &y, const type x, const type delta, const Problem<vector, type> &problem);
     const type delta;
     const Printer<vector, type> printer;
@@ -593,17 +605,21 @@ void runge_kutta(vector<type> &y, const type x, const type delta, const Problem<
 // parse:
 
 template <template <typename type> class vector, typename type>
-std::shared_ptr<DisposableSolver<vector, type>> parse_disposable_solver(const nlohmann::json &run, const Problem<vector, type> &problem, const IConstraint<vector, type> &cons, const PrinterConfig& conf)
+std::shared_ptr<DisposableSolver<vector, type>> parse_disposable_solver(
+    const nlohmann::json &run,
+    std::shared_ptr<Problem<vector, type>> problem,
+    const std::shared_ptr<IConstraint<vector, type>> cons,
+    const PrinterConfig &conf)
 {
     Printer<vector, type> printer(conf, problem);
     std::string method = run["method"];
     type delta = run["delta"];
     if (method == "euler")
-        return std::shared_ptr<DisposableSolver<vector, type>>{new DisposableSolver<vector, type>(problem, cons, printer, delta, euler<vector, type>)};
+        return std::make_shared<DisposableSolver<vector, type>>(problem, cons, printer, delta, euler<vector, type>);
     else if (method == "heun")
-        return std::shared_ptr<DisposableSolver<vector, type>>{new DisposableSolver<vector, type>(problem, cons, printer, delta, heun<vector, type>)};
+        return std::make_shared<DisposableSolver<vector, type>>(problem, cons, printer, delta, heun<vector, type>);
     else if (method == "runge_kutta")
-        return std::shared_ptr<DisposableSolver<vector, type>>{new DisposableSolver<vector, type>(problem, cons, printer, delta, runge_kutta<vector, type>)};
+        return std::make_shared<DisposableSolver<vector, type>>(problem, cons, printer, delta, runge_kutta<vector, type>);
 
     throw std::runtime_error("invalid configuration json");
 }
@@ -666,9 +682,8 @@ private:
     void parse_solver(const nlohmann::json &run)
     {
         std::shared_ptr<Problem<vector, type>> problem = parse_problem<vector, type>(run);
-        std::shared_ptr<IConstraint<vector, type>> cons = parse_constraint<vector, type>(run, *problem);
-        // std::cout << typeid(cons).name() << std::endl;
-        solvers.push_back(parse_disposable_solver<vector, type>(run, *problem, *cons, printer_config));
+        std::shared_ptr<IConstraint<vector, type>> cons = parse_constraint<vector, type>(run, problem);
+        solvers.push_back(parse_disposable_solver<vector, type>(run, problem, cons, printer_config));
     }
 
     PrinterConfig printer_config{};
@@ -691,5 +706,12 @@ int main()
         std::cerr << "Configuration failed. " << e.what() << '\n';
         return -1;
     }
-    //manager.run_all();
+    try
+    {
+        manager.run_all();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Execution failed. " << e.what() << '\n';
+    }
 }
