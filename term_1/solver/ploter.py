@@ -37,13 +37,13 @@ if head["do_log"]:
             if len(zones) > 1:
                 I.append(float(zones[1].split(el_sep)[0]))
         
-        # plt.subplot(plotrows, 2, plotrow * 2 + 1)
-        # plt.plot(X, Y1)
-        # plt.grid(True)
-        # plt.subplot(plotrows, 2, plotrow * 2 + 2)
-        # plt.plot(X, I)
-        plt.plot(Y1, Y2)
+        plt.subplot(plotrows, 2, plotrow * 2 + 1)
+        plt.plot(X, Y1)
         plt.grid(True)
+        plt.subplot(plotrows, 2, plotrow * 2 + 2)
+        plt.plot(X, I)
+        # plt.plot(Y1, Y2)
+        # plt.grid(True)
         if separete:
             plotrow += 1
     

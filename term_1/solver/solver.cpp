@@ -269,7 +269,7 @@ struct SimplestOscillator final : Problem<vector, type>, IAnalyticalProblem<vect
     SimplestOscillator(const vector<type> &y0, type w) : Problem<vector, type>(y0),
                                                          w(w), w2(w * w),
                                                          A(sqrt(y0[1] * y0[1] / w2 + y0[0] * y0[0])),
-                                                         initial_phase(atan(y0[1] / y0[0] / w)) {}
+                                                         initial_phase(-atan(y0[1] / y0[0] / w)) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
@@ -320,11 +320,11 @@ struct RealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic os
 template <template <typename type> class vector, typename type>
 struct BaseDrivedRealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
 {
-    RealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+    BaseDrivedRealPhysicalPendulum(const vector<type> &y0, type w=1, type gamma=0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {{y[1], -2 * gamma * y[1] - w * sin(y[0]) - F}};
+        return {{y[1], -2 * gamma * y[1] - w * sin(y[0]) - F(x, y)}};
     }
 
     virtual type F(const type x, const vector<type> &y) const &
@@ -347,7 +347,7 @@ const std::shared_ptr<Problem<vector, type>> parse_problem(const nlohmann::json 
     else if (problem_s == "ideal_physical_pendulum")
         return std::make_shared<IdialPhysicalPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"]);
     else if (problem_s == "physical_pendulum")
-        return std::make_shared<RealPhysicalPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"] problem_j["gamma"]);
+        return std::make_shared<RealPhysicalPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"], problem_j["gamma"]);
     else if (problem_s == "hollow_earth")
         return std::make_shared<HollowEarth<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
     else if (problem_s == "limit_hollow_earth")
