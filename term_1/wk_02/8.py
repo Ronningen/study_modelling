@@ -19,9 +19,9 @@ def init():
 def update(frame):
     xdata.append(frame)
     ydata.append(np.sin(frame))
-    ln.set_data(xdata, ydata)
+    ln.set_data(xdata[frame], ydata[frame])
     return ln,
 
-ani = FuncAnimation(fig, update, frames=np.linspace(0, 2*np.pi, 128),
+ani = FuncAnimation(fig, update, frames=np.arange(0,10),
                     init_func=init, blit=True)
 plt.show()

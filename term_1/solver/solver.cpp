@@ -194,7 +194,6 @@ struct IHaveInvariantProblem // Problem with an invariant with respect to x (int
     virtual type Invariant(const vector<type> &y) const & = 0;
 };
 
-
 template <template <typename type> class vector, typename type>
 struct LimitHollowEarth final : Problem<vector, type>, IHaveInvariantProblem<vector, type> // 1-dimensional hollow Earth with thin surface problem x = y[0], v = y[1]
 {
@@ -320,19 +319,75 @@ struct RealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic os
 template <template <typename type> class vector, typename type>
 struct BaseDrivedRealPhysicalPendulum : Problem<vector, type> // 1-dimensional harmonic oscillator phi = y[0], omega = y[1]
 {
-    BaseDrivedRealPhysicalPendulum(const vector<type> &y0, type w=1, type gamma=0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
+    BaseDrivedRealPhysicalPendulum(const vector<type> &y0, type w = 1, type gamma = 0.1) : Problem<vector, type>(y0), w(w), gamma(gamma) {}
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
         return {{y[1], -2 * gamma * y[1] - w * sin(y[0]) - F(x, y)}};
     }
 
-    virtual type F(const type x, const vector<type> &y) const &
-    {
-        return 0;
-    }
+    virtual type F(const type x, const vector<type> &y) const & = 0;
 
     const type w, gamma;
+};
+
+template <template <typename type> class vector, typename type>
+struct DualPendulum : Problem<vector, type>
+{
+    DualPendulum(const vector<type> &y0, type m1, type m2, type l1, type l2, type g = 9.81) : Problem<vector, type>(y0), m1(m1), m2(m2), l1(l1), l2(l2), g(g) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {y[2],
+                y[3],
+                -(a4(y) * b1(y) - a2(y) * b2(y)) / (a1(y) * a4(y) - a2(y) * a3(y)),
+                -(-a3(y) * b1(y) + a1(y) * b2(y)) / (a1(y) * a4(y) - a2(y) * a3(y))};
+    }
+
+private:
+    type a1(const vector<type> &y) const &
+    {
+        return (m1 + m2) * l1 * l1;
+    }
+    type a2(const vector<type> &y) const &
+    {
+        return m2 * l1 * l2 * cos(y[0] - y[1]);
+    }
+    type a3(const vector<type> &y) const &
+    {
+        return m2 * l1 * l2 * cos(y[0] - y[1]);
+    }
+    type a4(const vector<type> &y) const &
+    {
+        return m2 * l2 * l2;
+    }
+    type b1(const vector<type> &y) const &
+    {
+        return -m2 * y[3] * y[3] * l1 * l2 * sin(y[1] - y[0]) + g * l1 * (m1 + m2) * sin(y[0]);
+    }
+    type b2(const vector<type> &y) const &
+    {
+        return m2 * y[2] * y[2] * l1 * l2 * sin(y[1] - y[0]) + g * l2 * m2 * sin(y[1]);
+    }
+
+    type m1, m2, l1, l2, g;
+};
+
+template <template <typename type> class vector, typename type>
+struct RingSpring : Problem<vector, type>
+{
+    RingSpring(const vector<type> &y0, type l0, type k = 1) : Problem<vector, type>(y0), l0(l0), k(k) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {y[2],
+                y[3],
+                -k*(l0-2*cos(y[0]))*sin(y[0]),
+                0};
+    }
+
+private:
+    type k, l0;
 };
 
 // parse:
@@ -352,6 +407,10 @@ const std::shared_ptr<Problem<vector, type>> parse_problem(const nlohmann::json 
         return std::make_shared<HollowEarth<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"], problem_j["r"]);
     else if (problem_s == "limit_hollow_earth")
         return std::make_shared<LimitHollowEarth<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["GM"], problem_j["R"]);
+    else if (problem_s == "dual_pendulum")
+        return std::make_shared<DualPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["x1"], problem_j["v0"], problem_j["v1"]}, problem_j["m1"], problem_j["m2"], problem_j["l1"], problem_j["l2"]);
+    else if (problem_s == "ring_spring")
+        return std::make_shared<RingSpring<vector, type>>(vector<type>{problem_j["x0"], problem_j["x1"], problem_j["v0"], problem_j["v1"]}, problem_j["l0"], problem_j["k"]);
 
     throw std::runtime_error("invalid configuration json");
 }
@@ -462,8 +521,8 @@ template <template <typename type> class vector, typename type>
 struct Printer final
 {
     Printer(const PrinterConfig &conf, std::shared_ptr<Problem<vector, type>> problem) : conf(conf),
-            A(std::dynamic_pointer_cast<IAnalyticalProblem<vector, type>>(problem)),
-            I(std::dynamic_pointer_cast<IHaveInvariantProblem<vector, type>>(problem)) {}
+                                                                                         A(std::dynamic_pointer_cast<IAnalyticalProblem<vector, type>>(problem)),
+                                                                                         I(std::dynamic_pointer_cast<IHaveInvariantProblem<vector, type>>(problem)) {}
 
     // printing current
     void print(const type x, const vector<type> &y) const
@@ -695,23 +754,8 @@ private:
 int main()
 {
     SolvingManager manager;
-    try
-    {
-        std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
-        nlohmann::json config = nlohmann::json::parse(f);
-        manager.from_json(config);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Configuration failed. " << e.what() << '\n';
-        return -1;
-    }
-    try
-    {
-        manager.run_all();
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "Execution failed. " << e.what() << '\n';
-    }
+    std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
+    nlohmann::json config = nlohmann::json::parse(f);
+    manager.from_json(config);
+    manager.run_all();
 }
