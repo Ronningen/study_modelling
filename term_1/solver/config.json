@@ -6,7 +6,7 @@
         "row_sep": "\n",
         "run_sep": "finish",
         "do_log": true,
-        "show_separate": false
+        "show_separate": true
     },
     "runs": [
         {
@@ -14,22 +14,17 @@
             "vector": "naive",
             "method": "runge_kutta",
             "problem": {
-                "type": "ring_spring",
-                "x0": 1.2,
-                "x1": 0,
-                "v0": 2,
-                "v1": 1,
-                "l0": 1,
-                "k": 600,
-
-                "m1": 1,
-                "m2": 1,
-                "l1": 1,
-                "l2": 1
+                "type": "kapitza",
+                "x0": 3.1415,
+                "v0": 0,
+                "w": 8,
+                "a": 1,
+                "l": 10,
+                "g": 9.81
             },
             "constraint": {
                 "type": "counter",
-                "N": 100000
+                "N": 1000000
             },
             "delta": 0.001
         }
@@ -51,6 +46,51 @@
         "constraint_3": {
             "type": "invariant",
             "reletive_deviation_limit": 0.01
-        }
+        },
+        "runs": [
+            {
+                "type": "double",
+                "vector": "naive",
+                "method": "runge_kutta",
+                "problem": {
+                    "type": "ring_spring",
+                    "x0": 1.2,
+                    "x1": 0,
+                    "v0": 2,
+                    "v1": 1,
+                    "l0": 1,
+                    "k": 600,
+                    "m1": 1,
+                    "m2": 1,
+                    "l1": 1,
+                    "l2": 1
+                },
+                "constraint": {
+                    "type": "counter",
+                    "N": 100000
+                },
+                "delta": 0.001
+            },
+            {
+                "name": "скакалка",
+                "type": "double",
+                "vector": "naive",
+                "method": "runge_kutta",
+                "problem": {
+                    "type": "kapitza",
+                    "x0": 0.0001,
+                    "v0": 0,
+                    "w": 2,
+                    "a": 2,
+                    "l": 10,
+                    "g": 9.81
+                },
+                "constraint": {
+                    "type": "counter",
+                    "N": 1000000
+                },
+                "delta": 0.001
+            }
+        ]
     }
 }

@@ -338,10 +338,10 @@ struct DualPendulum : Problem<vector, type>
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {y[2],
+        return {{y[2],
                 y[3],
                 -(a4(y) * b1(y) - a2(y) * b2(y)) / (a1(y) * a4(y) - a2(y) * a3(y)),
-                -(-a3(y) * b1(y) + a1(y) * b2(y)) / (a1(y) * a4(y) - a2(y) * a3(y))};
+                -(-a3(y) * b1(y) + a1(y) * b2(y)) / (a1(y) * a4(y) - a2(y) * a3(y))}};
     }
 
 private:
@@ -370,7 +370,7 @@ private:
         return m2 * y[2] * y[2] * l1 * l2 * sin(y[1] - y[0]) + g * l2 * m2 * sin(y[1]);
     }
 
-    type m1, m2, l1, l2, g;
+    const type m1, m2, l1, l2, g;
 };
 
 template <template <typename type> class vector, typename type>
@@ -380,14 +380,53 @@ struct RingSpring : Problem<vector, type>
 
     vector<type> operator()(const type x, const vector<type> &y) const & override
     {
-        return {y[2],
+        return {{y[2],
                 y[3],
                 -k*(l0-2*cos(y[0]))*sin(y[0]),
-                0};
+                0}};
     }
 
 private:
-    type k, l0;
+    const type k, l0;
+};
+
+template <template <typename type> class vector, typename type>
+struct KapitzaPendulum : Problem<vector, type>
+{
+    KapitzaPendulum(const vector<type> &y0, type w, type a, type l, type g) : Problem<vector, type>(y0), w(w), w2(w * w), a(a), l(l), g(g) {}
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        return {{y[1], -(a * w2 * cos(w * x) + g) * sin(y[0]) / l}};
+    }
+
+private:
+    const type w, w2, a, l, g;
+};
+
+template <template <typename type> class vector, typename type>
+struct Wave : Problem<vector, type>
+{
+    Wave(size_t N, type v0) : Problem<vector, type>(y0_(N, v0)), N(N) {}
+
+    vector<type> y0_(size_t N, type v0)
+    {
+        vector<type> v{2*N};
+        v[2*N-1] = v0;
+        return v;
+    }
+
+    vector<type> operator()(const type x, const vector<type> &y) const & override
+    {
+        vector<type> v{2*N};
+        for (int i = 1; i < N; i++)
+            v[i] = y[i+N];
+        for (int i = 0; i < N; i++)
+            v[i+N] = y[i-1]+y[i+1]-2*y[i];
+    }
+
+private:
+    const size_t N;
 };
 
 // parse:
@@ -411,6 +450,8 @@ const std::shared_ptr<Problem<vector, type>> parse_problem(const nlohmann::json 
         return std::make_shared<DualPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["x1"], problem_j["v0"], problem_j["v1"]}, problem_j["m1"], problem_j["m2"], problem_j["l1"], problem_j["l2"]);
     else if (problem_s == "ring_spring")
         return std::make_shared<RingSpring<vector, type>>(vector<type>{problem_j["x0"], problem_j["x1"], problem_j["v0"], problem_j["v1"]}, problem_j["l0"], problem_j["k"]);
+    else if (problem_s == "kapitza")
+        return std::make_shared<KapitzaPendulum<vector, type>>(vector<type>{problem_j["x0"], problem_j["v0"]}, problem_j["w"], problem_j["a"], problem_j["l"], problem_j["g"]);
 
     throw std::runtime_error("invalid configuration json");
 }

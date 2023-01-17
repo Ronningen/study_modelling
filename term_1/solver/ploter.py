@@ -83,6 +83,31 @@ if head["do_log"]:
                     return ln,
                 ani = FuncAnimation(fig, update, frames=np.arange(0,len(Y1)),
                     init_func=init, blit=True, interval = 1)
+            case "kapitza":
+                w = run["problem"]["w"]
+                a = run["problem"]["a"]
+                l = run["problem"]["l"]
+
+                fig, (ax0, ax) = plt.subplots(1,2)
+                ln, = ax.plot([], [], '-o', markersize=10, color="black")
+                def init():
+                    ax.set_xlim(-1.1*l, 1.1*l)
+                    ax.set_ylim(-1.1*l, 1.1*l)
+                    ax0.set_xlim(-1.1*l, 1.1*l)
+                    ax0.set_ylim(-1.1*l, 1.1*l)
+                    fig.set_size_inches(12, 6)
+                    ax0.plot(l*np.sin(Y1), a*np.cos(w*np.array(X)) - l*np.cos(np.array(Y1)), lw=0.1)
+                    ax0.grid(True)
+                    ax.grid(True)
+                    return ln,
+                def update(frame):
+                    frame*=10
+                    ln.set_data(
+                        [0, 0, l*np.sin(Y1[frame])], 
+                        [0, a*np.cos(w*X[frame]), a*np.cos(w*X[frame]) - l*np.cos(Y1[frame])])
+                    return ln,
+                ani = FuncAnimation(fig, update, frames=np.arange(0,len(Y1)),
+                    init_func=init, blit=True, interval = 1)
             case _:
                 plt.subplot(plotrows, 2, plotrow * 2 + 1)
                 plt.plot(X, Y1)
