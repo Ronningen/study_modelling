@@ -15,16 +15,16 @@
             "method": "runge_kutta",
             "problem": {
                 "type": "kapitza",
-                "x0": 3.1415,
+                "x0": 2.2,
                 "v0": 0,
-                "w": 8,
-                "a": 1,
+                "w": 60,
+                "a": 0.5,
                 "l": 10,
                 "g": 9.81
             },
             "constraint": {
                 "type": "counter",
-                "N": 1000000
+                "N": 100000
             },
             "delta": 0.001
         }

@@ -113,7 +113,7 @@ if head["do_log"]:
                 plt.plot(X, Y1)
                 plt.grid(True)
                 plt.subplot(plotrows, 2, plotrow * 2 + 2)
-                plt.plot(X, I)
+                # plt.plot(X, I)
                 plt.plot(Y1, Y2)
             
         if separete:

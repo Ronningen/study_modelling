@@ -1,7 +1,8 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
-#include "json.hpp"
 #include <vector>
+#include "json.hpp"
 #include <unordered_map>
 
 using namespace std;
@@ -47,7 +48,8 @@ class Gas
         //  handle wall-dot
         if (dots[0].vx != 0)
         {
-            tmptime = (dots[0].x - box.l - dots[0].type.radius) / (-dots[0].vx);
+            tmptime = abs(dots[0].x - box.l - dots[0].type.radius) / (-dots[0].vx);
+            // cout << "\nw " << tmptime << " d\n";
             if (signbit(tmptime) == 0)
                 {
                     result.time = tmptime;
@@ -59,8 +61,9 @@ class Gas
         for (int i = 0; i < N-1; i++)
         if (dots[i].vx - dots[i+1].vx != 0)
         {
-            tmptime = (dots[i+1].x - dots[i].x - dots[i+1].type.radius - dots[i].type.radius) 
+            tmptime = abs(dots[i+1].x - dots[i].x - dots[i+1].type.radius - dots[i].type.radius) 
                     / (dots[i].vx - dots[i+1].vx);
+            // cout << "\nd " << tmptime << " d\n";
             if (signbit(tmptime) == 0 && tmptime < result.time)
             {
                 result.time = tmptime;
@@ -69,14 +72,15 @@ class Gas
         }
     
         // hadle dot-wall
-        if (dots[0].vx != 0)
+        if (dots[N-1].vx != 0)
         {
-            tmptime = (box.r - dots[N-1].x - dots[N-1].type.radius) / (dots[N-1].vx);
+            tmptime = abs(box.r - dots[N-1].x - dots[N-1].type.radius) / (dots[N-1].vx);
+            // cout << "\nd " << tmptime << " w\n";
             if (signbit(tmptime) == 0 && tmptime < result.time)
-                {
-                    result.time = tmptime;
-                    result.left_index = N-1;
-                }
+            {
+                result.time = tmptime;
+                result.left_index = N-1;
+            }
         }
         
         return result;
@@ -129,14 +133,18 @@ public:
     void print_state()
     {
         unordered_map<string, double> energy_summator;
+        double energy_full;
         for (int i = 0; i < N; i++)
         {
             cout << dots[i].x << "," << dots[i].vx << ",";
-            energy_summator[dots[i].type.name] += dots[i].type.mass * dots[i].vx * dots[i].vx / 2;
+            double energy = dots[i].type.mass * dots[i].vx * dots[i].vx / 2;
+            energy_summator[dots[i].type.name] += energy;
+            energy_full += energy;
         }
         cout << " energy: ";
         for (auto energy : energy_summator)
             cout << energy.second / Ns[energy.first] << ",";
+        cout << energy_full/N << ",";
     }
 
     // checks if particles stays sorted, so collisions have been found and handled correct in some way
@@ -187,23 +195,10 @@ Gas load_gas(string path)
 
 int main(int argc, char** argv)
 {
+    cout << fixed;
+    cout << setprecision(20);
+
     Gas gas = load_gas("/Users/samedi/Documents/прога/study_modelling/term_2/gas/config.json");
-    
-    /*switch (*argv[1])
-    {
-    case 'n':
-        for 
-        break;
-    case 'v'
-        break;
-    default:
-        cout << "Stop condition is undefined. Please use " 
-             << '"' << "n <natural number>" << '"' 
-             << " if you want to limit the maximum amount of collisions, or " 
-             << '"' << "t <real value>" << '"'
-             << " if you want ti limit the maximum evaluation time.";
-        break;
-    }*/
 
     size_t N;
     if (argc > 1)
@@ -217,6 +212,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < N; i++)
     {
         auto time = gas.move_untill_collide();
+        // cout << "control: " << (gas.check_if_valid()) << " ";
         if (time == -1)
         {
             cout << "no more collisions" << endl;

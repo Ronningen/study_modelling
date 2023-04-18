@@ -1,21 +1,25 @@
 {
     "types":
     [
-        {"name": "H",   "mass": 1, "radius": 1},
-        {"name": "He",  "mass": 1, "radius": 1}
+        {"name": "H",   "mass": 1, "radius": 1, "color": "orange"},
+        {"name": "He",  "mass": 7, "radius": 2, "color": "blue"}
     ],
     "box":{ "l": 0, "r": 100 },
     "dots":
     [
-        {"type": "H" ,  "x": 1 ,   "vx": 2     },
-        {"type": "He" ,  "x": 9 ,   "vx": 1     },
-        {"type": "He" ,  "x": 17 ,   "vx": 0    },
-        {"type": "H" ,  "x": 30 ,   "vx": 10     },
-        {"type": "H" ,  "x": 40 ,   "vx": 8     },
-        {"type": "He" ,  "x": 60 ,   "vx": 2     },
-        {"type": "H" ,  "x": 68 ,   "vx": 1     },
-        {"type": "H" ,  "x": 75 ,   "vx": 19     },
-        {"type": "He" ,  "x": 89 ,   "vx": 4     }
-
+        {"type": "H" ,  "x": 1 ,   "vx": 0     },
+        {"type": "He" ,  "x": 4 ,   "vx": 0.1   },
+        {"type": "He" ,  "x": 9 ,   "vx": -2   },
+        {"type": "H" ,  "x": 15 ,   "vx": 0    },
+        {"type": "H" ,  "x": 18 ,   "vx": 0    },
+        {"type": "H" ,  "x": 25 ,   "vx": 0    },
+        {"type": "He" ,  "x": 35 ,   "vx": 4   },
+        {"type": "H" ,  "x": 38 ,   "vx": 0    },
+        {"type": "H" ,  "x": 42 ,   "vx": -10  },
+        {"type": "He" ,  "x": 55 ,   "vx": 10  },
+        {"type": "H" ,  "x": 66 ,   "vx": 0    },
+        {"type": "H" ,  "x": 69 ,   "vx": 1    },
+        {"type": "H" ,  "x": 78 ,   "vx": 0    },
+        {"type": "He" ,  "x": 98 ,   "vx": 6   }
     ]
 }

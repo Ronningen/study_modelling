@@ -795,7 +795,7 @@ private:
 int main()
 {
     SolvingManager manager;
-    std::ifstream f("/Users/samedi/Documents/факультатив/study_modelling/term_1/solver/config.json");
+    std::ifstream f("term_1/solver/config.json");
     nlohmann::json config = nlohmann::json::parse(f);
     manager.from_json(config);
     manager.run_all();
