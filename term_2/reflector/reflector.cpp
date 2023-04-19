@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <valarray>
 #include "json.hpp"
@@ -24,7 +25,7 @@ struct RayPart
 {
     int from;
     vec x, v;
-    RayPart(json j):x({j["x0"], j["y0"]}), v({j["rx"], j["ry"]}), from(-1){}
+    RayPart(json j):x({j["x0"], j["y0"]}), v({j["vx"], j["vy"]}), from(-1){}
     RayPart(vec x, vec v, int from): x(x), v(v), from(from){}
 };
 
@@ -103,5 +104,59 @@ struct Arc : IMirror
 
 int main(int argc, char **argv)
 {
+    // parse
+    ifstream f("term_2/reflector/config.json");
+    json config = json::parse(f);
 
+    vector<IMirror*> mirrors{};
+    for (auto line : config["lines"])
+        mirrors.push_back(new Line(line));
+    for (auto arc : config["arcs"])
+        mirrors.push_back(new Line(arc));
+
+    vector<Ray> rays{};
+    for (auto ray : config["rays"])
+        rays.push_back(Ray(ray));
+
+    // trace
+    bool tracing = true;
+    while (tracing)
+    {
+        tracing = false;
+        for (auto ray : rays)
+        {
+            vec intersection{{INFINITY,INFINITY}};
+            double distance2 = INFINITY;
+            IMirror* mirror = nullptr;
+
+            for (auto mirror_ : mirrors)
+            {
+                vec x = mirror_->Trace(ray);
+                if (x.size() == 2)
+                {
+                    auto l = intersection - x;
+                    double d2 = dot(l,l);
+                    if (d2 < distance2)
+                    {
+                        tracing = true;
+                        distance2 = d2;
+                        intersection = x;
+                        mirror = mirror_;
+                    }
+                }
+            }
+
+            if (mirror != nullptr)
+                ray.parts.push_back(mirror->Reflect(ray, intersection));
+        }
+    }
+
+    // print
+    for (auto ray : rays)
+    {
+        cout << endl << " ray ";
+        for (auto part : ray.parts)
+            cout << part.x[0] << " " << part.x[1] << " ";
+        cout << ray.parts.back().v[0]*10000 << " " << ray.parts.back().v[1]*10000;
+    }
 }
