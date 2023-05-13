@@ -9,6 +9,12 @@ using namespace nlohmann;
 
 using vec = valarray<double>;
 
+extern "C" void dgesv( int* n, int* nrhs, double* a, int* lda, int* ipiv, double* b, int* ldb, int* info );
+#define N 2
+#define NRHS 1
+#define LDA N
+#define LDB N
+
 //v1x*v2x+v1y+v2y
 double dot(vec v1, vec v2)
 {
@@ -40,7 +46,7 @@ struct IMirror
 {
     int tag;
     IMirror(int tag):tag(tag){}
-    vec virtual Trace(Ray) = 0;
+    vec virtual Trace(Ray, bool*) = 0;
     RayPart virtual Reflect(Ray,vec) = 0;
 };
 
@@ -52,16 +58,31 @@ struct Line : IMirror
         auto v = x2 - x1;
         n = vec({v[1],v[0]}) / sqrt(dot(v,v));
     }
-    vec Trace(Ray ray) final
+    vec Trace(Ray ray, bool* has_result) final
     {
-        auto v = ray.parts.back().v;
-        auto x0 = ray.parts.back().x;
-        auto u = x2 - x1;
-        auto t = ((x1[0]-x0[0])*v[1] - (x1[1]-x0[1])*v[0]) / (u[0]*v[1] - u[1]*v[0]);
-        if (t < 0 or t > 1)
-            return {};
+        auto p1 = ray.parts.back().v;
+        auto p2 = x2 - x1;
+        auto dx = x1 - ray.parts.back().x;
+        
+        int n = N, nrhs = NRHS, lda = LDA, ldb = LDB, info;
+        int ipiv[N];
+        double a[LDA*N] = {
+            p1[0],p2[0],
+            p1[1],p2[1]
+        };
+        double b[LDB*NRHS] = {
+            dx[0], dx[1]
+        };
+        dgesv( &n, &nrhs, a, &lda, ipiv, b, &ldb, &info );
+        double t = -b[1];
+
+        /*TODO: strange values...*/ cout << b[0] << " " << t << " ";
+
+        *has_result = !(info > 0 or t < 0 or t > 1 or b[0] <= 0);
+        if (*has_result)
+            return x1 + p2*t;
         else
-            return x1 + u*t;
+            return {};
     }
     RayPart Reflect(Ray ray, vec at) final
     {
@@ -71,6 +92,7 @@ struct Line : IMirror
     }
 };
 
+//TODO: Arc
 struct Arc : IMirror
 {
     vec x, r;
@@ -79,7 +101,7 @@ struct Arc : IMirror
     {
         r2 = dot(r,r);
     }
-    vec Trace(Ray ray) final
+    vec Trace(Ray ray, bool* has_result) final
     {
         auto v = ray.parts.back().v;
         auto x0 = ray.parts.back().x;
@@ -114,40 +136,41 @@ int main(int argc, char **argv)
     for (auto arc : config["arcs"])
         mirrors.push_back(new Line(arc));
 
-    vector<Ray> rays{};
+    vector<Ray*> rays{};
     for (auto ray : config["rays"])
-        rays.push_back(Ray(ray));
+        rays.push_back(new Ray(ray));
 
     // trace
     bool tracing = true;
+    bool has_result;
     while (tracing)
     {
         tracing = false;
         for (auto ray : rays)
         {
-            vec intersection{{INFINITY,INFINITY}};
-            double distance2 = INFINITY;
-            IMirror* mirror = nullptr;
+            vec intersection{{0,0}};
+            double min_distance2 = -1;
+            IMirror* nearest_mirror = nullptr;
 
             for (auto mirror_ : mirrors)
             {
-                vec x = mirror_->Trace(ray);
-                if (x.size() == 2)
+                vec x = mirror_->Trace(*ray, &has_result);
+                if (has_result)
                 {
                     auto l = intersection - x;
                     double d2 = dot(l,l);
-                    if (d2 < distance2)
+                    if (d2 < min_distance2 || min_distance2 < 0)
                     {
                         tracing = true;
-                        distance2 = d2;
+                        min_distance2 = d2;
                         intersection = x;
-                        mirror = mirror_;
+                        nearest_mirror = mirror_;
                     }
                 }
             }
 
-            if (mirror != nullptr)
-                ray.parts.push_back(mirror->Reflect(ray, intersection));
+            if (nearest_mirror)
+                ray->parts.push_back(nearest_mirror->Reflect(*ray, intersection));
         }
     }
 
@@ -155,8 +178,11 @@ int main(int argc, char **argv)
     for (auto ray : rays)
     {
         cout << endl << " ray ";
-        for (auto part : ray.parts)
+        for (auto part : ray->parts)
             cout << part.x[0] << " " << part.x[1] << " ";
-        cout << ray.parts.back().v[0]*10000 << " " << ray.parts.back().v[1]*10000;
+        cout << ray->parts.back().v[0]*10000 << " " << ray->parts.back().v[1]*10000;
     }
+
+    for (auto ray : rays)
+        delete ray;
 }

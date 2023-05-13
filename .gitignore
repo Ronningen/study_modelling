@@ -4,3 +4,4 @@ test*
 *txt
 json.hpp
 term_1/config.json
+data.csv
